@@ -485,6 +485,40 @@ class VMXMLBase(LibvirtXMLBase):
             pass  # Element already doesn't exist
         self.xmltreefile.write()
 
+    def setup_attrs(self, **attrs):
+        """
+        Set attributes to VMXMLBase instance with dict-type value
+        """
+        if 'devices' in attrs:
+            devices = VMXMLDevices()
+            device_attrs_list = attrs.pop('devices')
+            for device_attrs in device_attrs_list:
+                try:
+                    device = librarian.get(device_attrs['device_tag'])()
+                except:
+                    device = librarian.get(device_attrs['device_tag'])(
+                        type_name=device_attrs['type_name'])
+                device_attrs.pop('device_tag')
+                device.setup_attrs(**device_attrs)
+                devices.append(device)
+            self.devices = devices
+        super().setup_attrs(**attrs)
+
+    def fetch_attrs(self, ignore=None):
+        """
+        Get attributes of VMXMLBase instance
+        """
+        attrs = super().fetch_attrs(ignore='devices')
+        devices = self.get_devices()
+        devices_attrs = []
+        for device in devices:
+            device_attrs = device.fetch_attrs()
+            device_attrs['device_tag'] = device.device_tag
+            devices_attrs.append(device_attrs)
+        attrs['devices'] = devices_attrs
+
+        return attrs
+
     def get_seclabel(self):
         """
         Return seclabel + child attribute dict list or raise LibvirtXML error
@@ -497,8 +531,8 @@ class VMXMLBase(LibvirtXMLBase):
         seclabel_node = self.xmltreefile.findall("seclabel")
         # no seclabel tag found in xml.
         if seclabel_node == []:
-            raise xcepts.LibvirtXMLError("Seclabel for this domain does not "
-                                         "exist")
+            raise xcepts.LibvirtXMLNotFoundError("Seclabel for this domain "
+                                                 "does not exist")
         seclabels = []
         for i in range(len(seclabel_node)):
             seclabel = dict(list(seclabel_node[i].items()))

@@ -324,7 +324,7 @@ class LibvirtXMLBase(propcan.PropCanBase):
                 target_obj.setup_attrs(**value)
                 setattr(self, key, target_obj)
 
-    def fetch_attrs(self):
+    def fetch_attrs(self, ignore=None):
         """
         Fetch attributes of xml object
 
@@ -359,7 +359,10 @@ class LibvirtXMLBase(propcan.PropCanBase):
 
         """
         attrs = {}
-        slots = set(self.__all_slots__) - set(self.__uncompareable__) - {'device_tag'}
+        ignore = [] if ignore is None else ignore
+        ignore = ignore if isinstance(ignore, list) else [ignore]
+        slots = set(self.__all_slots__) - set(self.__uncompareable__) - \
+                {'device_tag'} - set(ignore)
         for key in slots:
             try:
                 # Try to get values of each attribute, slot by slot
@@ -386,7 +389,7 @@ class LibvirtXMLBase(propcan.PropCanBase):
                         value = [v.fetch_attrs() for v in value]
                 # If the element is bool type, only return value when
                 # it's True
-                if value is not False:
+                if value is not False and value is not None:
                     attrs[key] = value
 
         return attrs
