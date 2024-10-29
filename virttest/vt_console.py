@@ -154,6 +154,9 @@ class ConsoleSession(object):
         if self.__closed:
             raise RuntimeError("%s is closed." % self)
 
+    def is_closed(self):
+        return self.__closed
+
     def is_responsive(self, *args, **kwargs):
         self.__verify_session_status()
         return self.__manager.proxy_call(self.is_responsive.__name__, *args, **kwargs)
