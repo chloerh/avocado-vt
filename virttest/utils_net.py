@@ -24,21 +24,21 @@ import six
 from aexpect import remote
 from avocado.core import exceptions
 from avocado.utils import path as utils_path
-from avocado.utils import process, stacktrace
+from avocado.utils import process
+from avocado.utils import stacktrace
 from six.moves import xrange
-
-from virttest import (
-    arch,
-    data_dir,
-    openvswitch,
-    propcan,
-    utils_misc,
-    utils_package,
-    utils_selinux,
-)
+from virttest import arch
+from virttest import data_dir
+from virttest import openvswitch
+from virttest import propcan
+from virttest import utils_misc
+from virttest import utils_package
+from virttest import utils_selinux
 from virttest.remote import RemoteRunner
-from virttest.staging import service, utils_memory
-from virttest.utils_windows import system, virtio_win
+from virttest.staging import service
+from virttest.staging import utils_memory
+from virttest.utils_windows import system
+from virttest.utils_windows import virtio_win
 from virttest.versionable_class import factory
 
 try:
@@ -4057,19 +4057,9 @@ def get_host_iface():
     return [_.strip() for _ in re.findall("(.*):", host_iface_info)]
 
 
-def get_default_gateway_json(
+def get_ip_route(
     iface_name=False, session=None, ip_ver="ipv4", force_dhcp=False, target_iface=None
 ):
-    """
-    Get the Default Gateway or Interface of host or guest with "ip -j".
-
-    :param iface_name: Whether default interface (True), or default gateway
-                        (False) is returned, defaults to False
-    :param session: shell/console session if any, defaults to None
-    :param ip_ver: ip version, defaults to 'ipv4'
-    :param target_iface: if given, get default gateway only for this device
-    :return: default gateway of target iface
-    """
     ip_cmd = "ip -c=never -j"
     if ip_ver == "ipv4":
         cmd = f"{ip_cmd} route"
@@ -4083,9 +4073,29 @@ def get_default_gateway_json(
         ip_output_str = run_func(cmd).strip()
         LOG.debug(f"ip -c=never route output:\n{ip_output_str}")
         ip_route = json.loads(ip_output_str)
+        return ip_route
     except Exception as why:
         LOG.error(f'Failed to get output of "{cmd}" command. Reason: {str(why)}')
         return None
+    
+
+def get_default_gateway_json(
+    iface_name=False, session=None, ip_ver="ipv4", force_dhcp=False, target_iface=None
+):
+    """
+    Get the Default Gateway or Interface of host or guest with "ip -j".
+
+    :param iface_name: Whether default interface (True), or default gateway
+                        (False) is returned, defaults to False
+    :param session: shell/console session if any, defaults to None
+    :param ip_ver: ip version, defaults to 'ipv4'
+    :param target_iface: if given, get default gateway only for this device
+    :return: default gateway of target iface
+    """
+
+    ip_route = get_ip_route(
+        iface_name, session, ip_ver=ip_ver, force_dhcp=force_dhcp, target_iface=target_iface
+        )
 
     default_route_list = [x for x in ip_route if x["dst"] == "default"]
     if force_dhcp:
